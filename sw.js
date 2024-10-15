@@ -1,4 +1,5 @@
-importScripts('https://unpkg.com/@babel/standalone@7.25.8/babel.min.js');
+importScripts("https://unpkg.com/@babel/standalone@7.25.8/babel.min.js");
+importScripts("https://unpkg.com/idb-keyval@6.2.1/dist/umd.js")
 
 self.addEventListener('install', _event => {
   self.skipWaiting();
@@ -29,6 +30,8 @@ import React from 'react';
   `
 }
 
+const store = idbKeyval.createStore('webdraw', 'fs')
+
 async function route(event) {
   const url = new URL(event.request.url);
   const isSameOrigin = url.origin === location.origin;
@@ -36,13 +39,13 @@ async function route(event) {
   if (isSameOrigin) {
     const scope = self.registration.scope;
     const relativePath = url.href.replace(scope, '');
-    const cached = routes[relativePath];
+    const cached = await store.get(relativePath, store);
 
     if (!cached) {
       return fetch(event.request);
     }
 
-    return new Response(transpile(cached, url.pathname), {
+    return new Response(transpile(cached.content, url.pathname), {
       status: 200,
       headers: {
         'content-type': 'text/javascript'
