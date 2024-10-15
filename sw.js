@@ -13,23 +13,6 @@ function transpile(code, path) {
   return Babel.transform(code, { filename: path, presets: ['react', 'typescript'] }).code;
 }
 
-const routes = {
-  'app/entry.client.tsx': `
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import Router from './routes.tsx';
-
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<Router />);
-`,
-  "app/routes.tsx": `
-import React from 'react';
-  const App = () => <h1 class="w-full h-screen flex items-center justify-center">Hello, React!</h1>;
-  
-  export default App;
-  `
-}
-
 const store = idbKeyval.createStore('webdraw', 'fs')
 
 async function route(event) {
