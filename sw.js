@@ -13,7 +13,7 @@ function transpile(code, path) {
 }
 
 const routes = {
-  '/app/entry.client.tsx': `
+  'app/entry.client.tsx': `
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import Router from './routes.tsx';
@@ -21,7 +21,7 @@ import Router from './routes.tsx';
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<Router />);
 `,
-  "/app/routes.tsx": `
+  "app/routes.tsx": `
 import React from 'react';
   const App = () => <h1 class="w-full h-screen flex items-center justify-center">Hello, React!</h1>;
   
@@ -36,7 +36,7 @@ async function route(event) {
   if (isSameOrigin) {
     const scope = self.registration.scope;
     const relativePath = url.href.replace(scope, '');
-    const cached = routes[relativePath];
+    const cached = routes[relativePath]g;
 
     if (!cached) {
       return fetch(event.request);
