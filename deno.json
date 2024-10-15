@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "lib": [
+      "deno.window",
+      "dom",
+      "WebWorker"
+    ]
+  },
+  "tasks": {
+    "start": "deno run -A npm:http-server"
+  }
+}

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Standalone React App</title>
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://esm.sh/react@18",
+          "react-dom": "https://esm.sh/react-dom@18",
+          "react-dom/": "https://esm.sh/react-dom@18/"
+        }
+      }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", async () => {
+          try {
+            const registration = await navigator.serviceWorker.register("/sw.js");
+            
+            const startReact = () => {
+              const script = document.createElement("script");
+              script.src = "/app/entry.client.tsx";
+              script.type = "module";
+              document.body.appendChild(script);
+            };
+
+            if (registration.active) {
+              startReact();
+            } else if (registration.waiting || registration.installing) {
+              const worker = registration.waiting || registration.installing;
+
+              worker.addEventListener("statechange", (event) => {
+                if (event.target.state === "activated") {
+                  startReact();
+                }
+              });
+            }
+          } catch (error) {
+            console.log("ServiceWorker is required to run this app: ", error);
+          }
+        });
+      }
+    </script>
+  </head>
+
+  <body>
+    <div id="root">hydrating react...</div>
+  </body>
+</html>
