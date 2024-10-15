@@ -19,11 +19,11 @@
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", async () => {
           try {
-            const registration = await navigator.serviceWorker.register("/sw.js");
+            const registration = await navigator.serviceWorker.register("sw.js");
             
             const startReact = () => {
               const script = document.createElement("script");
-              script.src = "/app/entry.client.tsx";
+              script.src = "app/entry.client.tsx";
               script.type = "module";
               document.body.appendChild(script);
             };
