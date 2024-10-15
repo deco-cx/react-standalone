@@ -36,7 +36,7 @@ async function route(event) {
   if (isSameOrigin) {
     const scope = self.registration.scope;
     const relativePath = url.href.replace(scope, '');
-    const cached = routes[relativePath]g;
+    const cached = routes[relativePath];
 
     if (!cached) {
       return fetch(event.request);
