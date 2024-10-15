@@ -39,7 +39,7 @@ async function route(event) {
   if (isSameOrigin) {
     const scope = self.registration.scope;
     const relativePath = url.href.replace(scope, '');
-    const cached = await store.get(relativePath, store);
+    const cached = await idbKeyval.get(relativePath, store);
 
     if (!cached) {
       return fetch(event.request);
