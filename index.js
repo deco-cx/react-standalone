@@ -56,7 +56,7 @@ const rerender = async () => {
 };
 
 const registerServiceWorker = async () => {
-  const waiting = new Promise.withResolvers();
+  const waiting = Promise.withResolvers();
 
   if ("serviceWorker" in navigator) {
     try {
