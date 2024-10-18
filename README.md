@@ -1,15 +1,16 @@
-# React Browser Template (React + TailwindCSS + TypeScript)
+# React Browser Template (React + React Router + TailwindCSS + TypeScript)
 
 This project is a **React** template designed to run directly in the browser without the need for **Node.js** or any other server. It simplifies development by enabling you to write and bundle your **React** code right in the browser, with support for **TailwindCSS** and **TypeScript**. All the bundling and plumbing required to make this work happens just-in-time (JIT), making this template perfect for **prototyping new ideas at the speed of light**.
 
 ## Features
 
 - **React**: The modern library for building user interfaces.
+- **React Router**: Remix.js-like routing system.
 - **TailwindCSS**: A utility-first CSS framework for rapid UI development.
 - **TypeScript**: A superset of JavaScript for better code safety and tooling.
 - **No Server Required**: Run everything directly in the browser, no backend setup.
 - **Just-in-Time (JIT) Compilation**: Your React components are compiled and bundled in real time.
-- **Instant Feedback**: See your changes instantly with no need to restart or reload a local development server.
+- **Instant Feedback (HMR)**: See your changes instantly with no need to restart or reload a local development server.
 - **Prototyping Ready**: Ideal for quickly testing new ideas without any build tools, setup, or installation overhead.
 
 ## Modern Browser Features
@@ -34,8 +35,8 @@ The magic happens entirely in the browser:
 1. **Clone the Repository**
 
    ```bash
-   git clone https://github.com/your-username/react-browser-template.git
-   cd react-browser-template
+   git clone https://github.com/tlgimenes/react-standalone.git
+   cd react-standalone
    ```
 
 2. **Open `index.html` in Your Browser**
@@ -50,17 +51,22 @@ The magic happens entirely in the browser:
 
 ```plaintext
 .
-├── index.html         # Entry point of the application
-├── src/
-│   ├── App.tsx        # Main React component
-│   ├── index.tsx      # React DOM rendering entry
-│   └── styles.css     # Custom styles using TailwindCSS
-└── README.md          # Project documentation
+├── index.html             # Entry point of the application
+├── index.js               # Setup react hmr and service worker
+├── sw.js                  # JIT Typescript compiler
+├── app/
+│   ├── App.tsx            # Main React component
+│   ├── entry.client.tsx   # React DOM rendering entry
+│   ├── ErrorPage.tsx      # 500 or 404 status page component
+│   └── routes/            # Custom styles using TailwindCSS
+│       └── index.tsx      # Home Page
+└── README.md              # Project documentation
 ```
 
 ## Technologies Used
 
 - **React**: For building UI components.
+- **React Router**: For routing and data fetching.
 - **TailwindCSS (via CDN)**: To design beautiful user interfaces with utility-first classes, no build step required.
 - **TypeScript**: Adds strong typing to JavaScript.
 - **Babel (JIT Compilation)**: To transpile JSX and TypeScript code in real time, directly in the browser.

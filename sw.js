@@ -1,7 +1,5 @@
 importScripts("https://unpkg.com/@babel/standalone@7.25.8/babel.min.js");
 
-const cachePromise = caches.open("v1");
-
 self.addEventListener("install", (_event) => {
   self.skipWaiting();
 });
@@ -14,110 +12,83 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(route(event.request));
 });
 
-self.addEventListener("message", async (event) => {
-  const { data } = event;
+/**
+ * Adds a querystring to all imports in the code so we can bust the cache
+ */
+function addQuerystringToImportsBabelPlugin() {
+  return {
+    visitor: {
+      ImportDeclaration(path) {
+        const source = path.node.source.value;
 
-  if (data.type !== "file") {
-    return;
-  }
+        if (typeof source !== "string") {
+          return;
+        }
 
-  const cache = await cachePromise;
+        const isRelative = source.startsWith("./") ||
+          source.startsWith("../") ||
+          source.startsWith("/");
 
-  const { content, filepath } = data;
+        if (isRelative) {
+          path.node.source = Babel.packages.types.stringLiteral(
+            `${source}?ts=${Date.now()}`,
+          );
+        }
+      },
+      CallExpression(path) {
+        if (
+          path.node.callee.type === "Import" &&
+          path.node.arguments.length === 1 &&
+          path.node.arguments[0].type === "StringLiteral"
+        ) {
+          const source = path.node.arguments[0].value;
+          const isRelative = source.startsWith("./") ||
+            source.startsWith("../") ||
+            source.startsWith("/");
 
-  const mimeType = filepathToMimeType(filepath);
-
-  const shouldTranspile = mimeType === "text/javascript";
-
-  const request = new Request(filepath);
-  const reponse = new Response(
-    shouldTranspile ? transpile(content, filepath) : content,
-    {
-      status: 200,
-      headers: {
-        "content-length": content.length,
-        "content-type": mimeType,
+          if (isRelative) {
+            path.node.arguments[0].value = `${source}?ts=${Date.now()}`;
+          }
+        }
       },
     },
-  );
-
-  cache.put(request, reponse);
-});
-
-function filepathToMimeType(filepath) {
-  if (/\.(tsx?|jsx?)$/.test(filepath)) {
-    return "text/javascript";
-  } else if (/\.css$/.test(filepath)) {
-    return "text/css";
-  } else if (/\.svg$/.test(filepath)) {
-    return "image/svg+xml";
-  } else if (/\.woff2?$/.test(filepath)) {
-    return "font/woff2";
-  } else if (/\.ttf$/.test(filepath)) {
-    return "font/ttf";
-  } else if (/\.eot$/.test(filepath)) {
-    return "application/vnd.ms-fontobject";
-  } else if (/\.otf$/.test(filepath)) {
-    return "font/otf";
-  } else if (/\.jpeg$/.test(filepath)) {
-    return "image/jpeg";
-  } else if (/\.png$/.test(filepath)) {
-    return "image/png";
-  } else if (/\.gif$/.test(filepath)) {
-    return "image/gif";
-  } else {
-    return "text/plain";
-  }
+  };
 }
 
-function transpile(code, path) {
-  return Babel.transform(code, {
-    filename: path,
-    presets: ["react", "typescript"],
+const transpile = (code, path) =>
+  Babel.transform(code, {
+    code: true,
+    ast: false,
+    filename: new URL(path).pathname,
+    presets: [["react", { runtime: "automatic" }], "typescript"],
+    plugins: [addQuerystringToImportsBabelPlugin],
   }).code;
-}
 
 /** If the request is a Typescript file, transpile it and change to text/javascript */
 async function maybeTranspileResponse(request, response) {
-  const headers = new Headers(response.headers);
-
   const shouldTranspile = new URL(request.url).pathname.match(/\.tsx?$/);
-  let text = await response.text();
 
-  if (shouldTranspile) {
-    headers.set("content-type", "text/javascript");
-    text = transpile(text, request.url);
+  if (!shouldTranspile) {
+    return response;
   }
 
-  return new Response(text, {
-    ...response,
-    headers,
-  });
+  const headers = new Headers(response.headers);
+
+  const text = transpile(await response.text(), request.url);
+
+  headers.set("content-type", "text/javascript");
+  headers.set("cache-control", "no-store, no-cache");
+
+  return new Response(text, { ...response, headers });
 }
 
 async function route(request) {
+  const cache = await caches.open("v1");
+
   const url = new URL(request.url);
-  const isSameOrigin = url.origin === location.origin;
+  url.searchParams.delete("ts");
 
-  const cache = await cachePromise;
+  const response = await cache.match(url) || await fetch(request);
 
-  /** We may still need to transpile some code and fix content-type */
-  if (isSameOrigin) {
-    const response = await fetch(request).then((response) =>
-      maybeTranspileResponse(request, response)
-    );
-    await cache.put(request, response);
-  }
-
-  const matched = await cache.match(request);
-
-  if (matched) {
-    return matched;
-  }
-
-  const response = await fetch(request);
-
-  cache.put(request, response.clone());
-
-  return response;
+  return maybeTranspileResponse(request, response);
 }

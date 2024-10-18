@@ -1,10 +1,23 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import Router from "./routes.tsx";
+import App from "./App.tsx";
 
-const element = document.getElementById("root");
+export const render = () => {
+  const element = document.getElementById("root");
 
-if (element instanceof HTMLElement) {
+  if (element === null) {
+    return;
+  }
+
   const root = ReactDOM.createRoot(element);
-  root.render(<Router />);
-}
+
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>,
+  );
+
+  return () => {
+    root.unmount();
+  };
+};

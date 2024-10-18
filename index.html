@@ -7,46 +7,21 @@
     <script type="importmap">
       {
         "imports": {
-          "react": "https://esm.sh/react@18",
-          "react-dom": "https://esm.sh/react-dom@18",
-          "react-dom/": "https://esm.sh/react-dom@18/"
+          "react": "https://esm.sh/react@18.3.1",
+          "react/": "https://esm.sh/react@18.3.1/",
+          "react-dom": "https://esm.sh/react-dom@18.3.1",
+          "react-dom/": "https://esm.sh/react-dom@18.3.1/",
+          "react-router-dom": "https://esm.sh/react-router-dom@6.27.0"
         }
       }
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      if ("serviceWorker" in navigator) {
-        window.addEventListener("load", async () => {
-          try {
-            const registration = await navigator.serviceWorker.register("sw.js");
-            
-            const startReact = () => {
-              const script = document.createElement("script");
-              script.src = "app/entry.client.tsx";
-              script.type = "module";
-              document.body.appendChild(script);
-            };
-
-            if (registration.active) {
-              startReact();
-            } else if (registration.waiting || registration.installing) {
-              const worker = registration.waiting || registration.installing;
-
-              worker.addEventListener("statechange", (event) => {
-                if (event.target.state === "activated") {
-                  startReact();
-                }
-              });
-            }
-          } catch (error) {
-            console.log("ServiceWorker is required to run this app: ", error);
-          }
-        });
-      }
-    </script>
+    <script type="module" src="index.js"></script>
   </head>
 
   <body>
-    <div id="root" class="w-full h-screen flex items-center justify-center">loading...</div>
+    <div id="root" class="w-full h-screen flex items-center justify-center">
+      loading...
+    </div>
   </body>
 </html>
