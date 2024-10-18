@@ -1,4 +1,4 @@
-import { getSDK } from "https://webdraw.ai/webdraw-sdk.js";
+import { getSDK } from "https://webdraw.ai/webdraw-sdk";
 
 const cache = await caches.open("v1");
 
