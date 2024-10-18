@@ -29,7 +29,7 @@ function filepathToMimeType(filepath) {
 }
 
 const updateFileCache = async (filepath, content) => {
-  const request = new URL(filepath, location.origin);
+  const request = new URL(`./${filepath}`, location.origin);
 
   if (content == null) {
     await cache.delete(request);
