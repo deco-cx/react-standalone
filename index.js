@@ -1,4 +1,4 @@
-import { getSDK } from "http://localhost:5173/webdraw-sdk.js";
+import { getSDK } from "http://webdraw.ai/webdraw-sdk.js";
 
 const cache = await caches.open("v1");
 
@@ -48,7 +48,42 @@ const updateFileCache = async (filepath, content) => {
   await cache.put(request, response);
 };
 
+let unmount = () => {};
+const rerender = async () => {
+  unmount();
+  const entry = await import(`./app/entry.client.tsx?ts=${Date.now()}`);
+  unmount = entry.render();
+};
+
+const registerServiceWorker = async () => {
+  const waiting = new Promise.withResolvers();
+
+  if ("serviceWorker" in navigator) {
+    try {
+      const registration = await navigator.serviceWorker.register("sw.js");
+
+      if (registration.active) {
+        waiting.resolve();
+      } else if (registration.waiting || registration.installing) {
+        const worker = registration.waiting || registration.installing;
+
+        worker.addEventListener("statechange", (event) => {
+          if (event.target.state === "activated") {
+            waiting.resolve();
+          }
+        });
+      }
+    } catch (error) {
+      console.log("ServiceWorker is required to run this app: ", error);
+    }
+  }
+
+  return waiting.promise;
+};
+
 const main = async () => {
+  await registerServiceWorker();
+
   const sdk = await getSDK();
 
   if (sdk) {
@@ -72,29 +107,4 @@ const main = async () => {
   rerender();
 };
 
-let unmount = () => {};
-const rerender = async () => {
-  unmount();
-  const entry = await import(`./app/entry.client.tsx?ts=${Date.now()}`);
-  unmount = entry.render();
-};
-
-if ("serviceWorker" in navigator) {
-  try {
-    const registration = await navigator.serviceWorker.register("sw.js");
-
-    if (registration.active) {
-      main();
-    } else if (registration.waiting || registration.installing) {
-      const worker = registration.waiting || registration.installing;
-
-      worker.addEventListener("statechange", (event) => {
-        if (event.target.state === "activated") {
-          main();
-        }
-      });
-    }
-  } catch (error) {
-    console.log("ServiceWorker is required to run this app: ", error);
-  }
-}
+main();
