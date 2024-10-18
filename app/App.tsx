@@ -15,6 +15,11 @@ const router = createBrowserRouter([
         element: <Index.default />,
         ...Index,
       },
+      {
+        path: 'react-standalone', // Make it work on GitHub Pages
+        element: <Index.default />,
+        ...Index,
+      },
       // Add other routes in here
       // { path: 'blog/:id', element: <Blog.default />, ...Blog },
     ],
