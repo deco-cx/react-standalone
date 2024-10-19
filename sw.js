@@ -15,11 +15,15 @@ self.addEventListener("fetch", (event) => {
 /**
  * Get importmap from local cache, or fetch
  */
-const getImportMapJSON = async () => {
-  const url = new URL("./deno.json", location.href);
+const getImportMapJSON = async (ts) => {
+  const url = new URL(`./deno.json?ts=${ts}`, location.href);
 
   try {
     const response = await caches.match(url) || await fetch(url);
+
+    const cache = await caches.open("v1");
+    await cache.put(url, response.clone());
+
     const importMap = await response.json();
 
     return importMap;
@@ -32,7 +36,7 @@ const getImportMapJSON = async () => {
 /**
  * Adds a querystring to all imports in the code so we can bust the cache
  */
-function addQuerystringToImportsBabelPlugin() {
+function appendTstoImportsBabelPlugin(ts) {
   return {
     visitor: {
       ImportDeclaration(path) {
@@ -46,11 +50,13 @@ function addQuerystringToImportsBabelPlugin() {
           source.startsWith("../") ||
           source.startsWith("/");
 
-        if (isRelative) {
-          path.node.source = Babel.packages.types.stringLiteral(
-            `${source}?ts=${Date.now()}`,
-          );
+        if (!isRelative) {
+          return;
         }
+
+        path.node.source = Babel.packages.types.stringLiteral(
+          `${source}?ts=${ts}`,
+        );
       },
       CallExpression(path) {
         if (
@@ -63,11 +69,13 @@ function addQuerystringToImportsBabelPlugin() {
             source.startsWith("../") ||
             source.startsWith("/");
 
-          if (isRelative) {
-            path.node.arguments[0].value = Babel.packages.types.stringLiteral(
-              `${source}?ts=${Date.now()}`,
-            );
+          if (!isRelative) {
+            return;
           }
+
+          path.node.arguments[0].value = Babel.packages.types.stringLiteral(
+            `${source}?ts=${ts}`,
+          );
         }
       },
     },
@@ -160,8 +168,8 @@ function transformImportMapBabelPlugin(importMap) {
   };
 }
 
-const transpile = async (tsCode, path) => {
-  const importMap = await getImportMapJSON();
+const transpile = async (tsCode, path, ts) => {
+  const importMap = await getImportMapJSON(ts);
 
   const { code } = Babel.transform(tsCode, {
     code: true,
@@ -169,7 +177,7 @@ const transpile = async (tsCode, path) => {
     filename: new URL(path).pathname,
     presets: [["react", { runtime: "automatic" }], "typescript"],
     plugins: [
-      addQuerystringToImportsBabelPlugin,
+      appendTstoImportsBabelPlugin(ts),
       transformImportMapBabelPlugin(importMap),
     ],
   });
@@ -178,7 +186,7 @@ const transpile = async (tsCode, path) => {
 };
 
 /** If the request is a Typescript file, transpile it and change to text/javascript */
-async function maybeTranspileResponse(request, response) {
+async function maybeTranspileResponse(request, response, ts) {
   const shouldTranspile = new URL(request.url).pathname.match(/\.tsx?$/);
 
   if (!shouldTranspile) {
@@ -188,7 +196,7 @@ async function maybeTranspileResponse(request, response) {
   const headers = new Headers(response.headers);
 
   const tsCode = await response.text();
-  const text = await transpile(tsCode, request.url);
+  const text = await transpile(tsCode, request.url, ts);
 
   headers.set("content-type", "text/javascript");
   headers.set("cache-control", "no-store, no-cache");
@@ -197,12 +205,12 @@ async function maybeTranspileResponse(request, response) {
 }
 
 async function route(request) {
-  const cache = await caches.open("v1");
-
   const url = new URL(request.url);
+
+  const ts = url.searchParams.get("ts") || Date.now();
   url.searchParams.delete("ts");
 
-  const response = await cache.match(url) || await fetch(request);
+  const response = await caches.match(url) || await fetch(request);
 
-  return maybeTranspileResponse(request, response);
+  return maybeTranspileResponse(request, response, ts);
 }
