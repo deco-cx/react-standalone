@@ -58,31 +58,35 @@ const rerender = async () => {
 const registerServiceWorker = async () => {
   const waiting = Promise.withResolvers();
 
-  if ("serviceWorker" in navigator) {
-    try {
-      const registration = await navigator.serviceWorker.register("sw.js");
+  if (!("serviceWorker" in navigator)) {
+    throw new Error("ServiceWorker is required to run this app");
+  }
 
-      if (registration.active) {
-        waiting.resolve();
-      } else if (registration.waiting || registration.installing) {
-        const worker = registration.waiting || registration.installing;
+  try {
+    const registration = await navigator.serviceWorker.register("sw.js");
 
-        worker.addEventListener("statechange", (event) => {
-          if (event.target.state === "activated") {
-            waiting.resolve();
-          }
-        });
-      }
-    } catch (error) {
-      console.log("ServiceWorker is required to run this app: ", error);
+    if (registration.active) {
+      waiting.resolve();
+    } else if (registration.waiting || registration.installing) {
+      const worker = registration.waiting || registration.installing;
+
+      worker.addEventListener("statechange", (event) => {
+        if (event.target.state === "activated") {
+          waiting.resolve();
+        }
+      });
     }
+  } catch (error) {
+    console.error(error);
+
+    throw new Error("ServiceWorker is required to run this app");
   }
 
   return waiting.promise;
 };
 
 const main = async () => {
-  await registerServiceWorker();
+  await registerServiceWorker().catch(console.error);
 
   const sdk = await getSDK();
 
