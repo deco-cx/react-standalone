@@ -12,17 +12,29 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(route(event.request));
 });
 
+const readFromCache = async (href) => {
+  const url = new URL(href, location.href);
+  const noTs = new URL(url);
+
+  noTs.searchParams.delete("ts");
+
+  return await caches.match(noTs) || await caches.match(url);
+};
+
+const saveToCache = async (request, response) => {
+  const cache = await caches.open("v1");
+  await cache.put(request, response.clone());
+};
+
 /**
  * Get importmap from local cache, or fetch
  */
 const getImportMapJSON = async (ts) => {
-  const url = new URL(`./deno.json?ts=${ts}`, location.href);
-
   try {
-    const response = await caches.match(url) || await fetch(url);
+    const href = `./deno.json?ts=${ts}`;
+    const response = await readFromCache(href) || await fetch(href);
 
-    const cache = await caches.open("v1");
-    await cache.put(url, response.clone());
+    await saveToCache(href, response);
 
     const importMap = await response.json();
 
@@ -168,13 +180,16 @@ function transformImportMapBabelPlugin(importMap) {
   };
 }
 
-const transpile = async (tsCode, path, ts) => {
+const transpile = async (tsCode, href) => {
+  const url = new URL(href);
+  const ts = url.searchParams.get("ts") || Date.now();
+
   const importMap = await getImportMapJSON(ts);
 
   const { code } = Babel.transform(tsCode, {
     code: true,
     ast: false,
-    filename: new URL(path).pathname,
+    filename: url.pathname,
     presets: [["react", { runtime: "automatic" }], "typescript"],
     plugins: [
       appendTstoImportsBabelPlugin(ts),
@@ -186,7 +201,7 @@ const transpile = async (tsCode, path, ts) => {
 };
 
 /** If the request is a Typescript file, transpile it and change to text/javascript */
-async function maybeTranspileResponse(request, response, ts) {
+async function maybeTranspileResponse(request, response) {
   const shouldTranspile = new URL(request.url).pathname.match(/\.tsx?$/);
 
   if (!shouldTranspile) {
@@ -196,21 +211,23 @@ async function maybeTranspileResponse(request, response, ts) {
   const headers = new Headers(response.headers);
 
   const tsCode = await response.text();
-  const text = await transpile(tsCode, request.url, ts);
+
+  const start = performance.now();
+  const text = await transpile(tsCode, request.url);
 
   headers.set("content-type", "text/javascript");
   headers.set("cache-control", "no-store, no-cache");
+  headers.set("server-timing", `transpilation;dur=${performance.now() - start}`);
 
   return new Response(text, { ...response, headers });
 }
 
 async function route(request) {
-  const url = new URL(request.url);
+  const response = await readFromCache(request.url) || await fetch(request);
 
-  const ts = url.searchParams.get("ts") || Date.now();
-  url.searchParams.delete("ts");
+  const transpiled = await maybeTranspileResponse(request, response);
 
-  const response = await caches.match(url) || await fetch(request);
+  await saveToCache(request, transpiled);
 
-  return maybeTranspileResponse(request, response, ts);
+  return transpiled;
 }
