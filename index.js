@@ -98,7 +98,7 @@ const main = async () => {
     }
 
     sdk.fs.onChange(async (event) => {
-      const filepath = event.filepath;
+      const filepath = event.filename;
 
       const { content } = await sdk.fs.read(filepath);
 
