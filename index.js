@@ -51,7 +51,9 @@ const updateFileCache = async (filepath, content) => {
 let unmount = () => {};
 const rerender = async () => {
   unmount();
-  const entry = await import(`./app/entry.client.tsx?ts=${Date.now()}`);
+  const entry = await import(
+    `./app/entry.client.tsx?ts=${Math.floor(Math.random() * 1e3)}`
+  );
   unmount = entry.render();
 };
 

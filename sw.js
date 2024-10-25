@@ -182,7 +182,7 @@ function transformImportMapBabelPlugin(importMap) {
 
 const transpile = async (tsCode, href) => {
   const url = new URL(href);
-  const ts = url.searchParams.get("ts") || Date.now();
+  const ts = url.searchParams.get("ts") || Math.floor(Math.random() * 1e3);
 
   const importMap = await getImportMapJSON(ts);
 
