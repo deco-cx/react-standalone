@@ -21,7 +21,7 @@ const router = createBrowserRouter([
   },
 ], {
   // Make it work on GitHub Pages
-  basename: "react-standalone",
+  basename: "/react-standalone",
 });
 
 function Root() {
