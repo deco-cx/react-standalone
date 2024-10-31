@@ -49,12 +49,28 @@ const updateFileCache = async (filepath, content) => {
 };
 
 let unmount = () => {};
+
 const rerender = async () => {
-  unmount();
-  const entry = await import(
-    `./app/entry.client.tsx?ts=${Math.floor(Math.random() * 1e3)}`
-  );
-  unmount = entry.render();
+  if (typeof unmount === "function") {
+    try {
+      unmount();
+    } catch (error) {
+      console.error("Error during unmount:", error);
+    }
+  }
+
+  try {
+    const entry = await import(
+      `./app/entry.client.tsx?ts=${Date.now()}`
+    );
+
+    unmount = typeof entry.render === "function"
+      ? await entry.render()
+      : () => {};
+  } catch (error) {
+    console.error("Error during rerender:", error);
+    unmount = () => {};
+  }
 };
 
 const registerServiceWorker = async () => {
