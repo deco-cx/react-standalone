@@ -61,7 +61,7 @@ const rerender = async () => {
 
   try {
     const entry = await import(
-      `./app/entry.client.tsx?ts=${Date.now()}`
+      `./app/entry.client.tsx?ts=${Math.floor(Math.random() * 1e3)}`
     );
 
     unmount = typeof entry.render === "function"

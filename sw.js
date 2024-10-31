@@ -22,7 +22,7 @@ const readFromCache = async (href) => {
 };
 
 const saveToCache = async (request, response) => {
-  const cache = await caches.open("v1");
+  const cache = await caches.open("v2");
   await cache.put(request, response.clone());
 };
 
@@ -217,7 +217,10 @@ async function maybeTranspileResponse(request, response) {
 
   headers.set("content-type", "text/javascript");
   headers.set("cache-control", "no-store, no-cache");
-  headers.set("server-timing", `transpilation;dur=${performance.now() - start}`);
+  headers.set(
+    "server-timing",
+    `transpilation;dur=${performance.now() - start}`,
+  );
 
   return new Response(text, { ...response, headers });
 }
