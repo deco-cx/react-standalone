@@ -230,7 +230,5 @@ async function route(request) {
 
   const transpiled = await maybeTranspileResponse(request, response);
 
-  await saveToCache(request, transpiled);
-
   return transpiled;
 }
