@@ -22,7 +22,7 @@ const readFromCache = async (href) => {
 };
 
 const saveToCache = async (request, response) => {
-  const cache = await caches.open("v2");
+  const cache = await caches.open("v3");
   await cache.put(request, response.clone());
 };
 

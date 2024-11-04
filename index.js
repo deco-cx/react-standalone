@@ -1,6 +1,6 @@
 import { getSDK } from "https://webdraw.ai/webdraw-sdk";
 
-const cache = await caches.open("v2");
+const cache = await caches.open("v3");
 
 function filepathToMimeType(filepath) {
   if (/\.(tsx?|jsx?)$/.test(filepath)) {
