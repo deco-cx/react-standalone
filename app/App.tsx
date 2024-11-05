@@ -22,6 +22,8 @@ const router = createBrowserRouter([
 ], {
   // Make it work on GitHub Pages
   basename: "/react-standalone",
+  // Make it work on Netlify, S3...
+  // basename: "/",
 });
 
 function Root() {
