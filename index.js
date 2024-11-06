@@ -1,6 +1,6 @@
 import { getSDK } from "https://webdraw.ai/webdraw-sdk";
 
-const cache = await caches.open("v3");
+const cache = await caches.open("react-standalone::v3");
 
 function filepathToMimeType(filepath) {
   if (/\.(tsx?|jsx?)$/.test(filepath)) {
@@ -29,7 +29,7 @@ function filepathToMimeType(filepath) {
 }
 
 const updateFileCache = async (filepath, content) => {
-  const request = new URL(`.${filepath}`, location.href);
+  const request = new URL(filepath, location.origin);
 
   if (content == null) {
     await cache.delete(request);
@@ -51,13 +51,7 @@ const updateFileCache = async (filepath, content) => {
 let unmount = () => {};
 
 const rerender = async () => {
-  if (typeof unmount === "function") {
-    try {
-      unmount();
-    } catch (error) {
-      console.error("Error during unmount:", error);
-    }
-  }
+  unmount();
 
   try {
     const entry = await import(
