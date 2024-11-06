@@ -26,6 +26,11 @@ export default function ErrorPage() {
       <p className="mt-2 text-gray-600">
         <i>{error.statusText || error.message}</i>
       </p>
+      {error.stack && (
+        <pre className="mt-4 p-4 bg-gray-200 rounded text-left text-xs text-gray-800 overflow-x-auto">
+          {error.stack}
+        </pre>
+      )}
     </div>
   );
 }
