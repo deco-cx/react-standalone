@@ -12,18 +12,17 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(route(event.request));
 });
 
-const readFromCache = async (href) => {
-  const url = new URL(href, location.href);
-  const noTs = new URL(url);
+const NETWORK_CACHE_NAME = "react-standalone::v3";
+const TRANSPILATION_CACHE_NAME = `react-standalone::transpiled::v3`;
 
+const getFromCache = async (href) => {
+  const cache = await caches.open(NETWORK_CACHE_NAME);
+
+  const url = new URL(href);
+  const noTs = new URL(url);
   noTs.searchParams.delete("ts");
 
-  return await caches.match(noTs) || await caches.match(url);
-};
-
-const saveToCache = async (request, response) => {
-  const cache = await caches.open("v3");
-  await cache.put(request, response.clone());
+  return await cache.match(noTs) || await cache.match(url);
 };
 
 /**
@@ -31,10 +30,11 @@ const saveToCache = async (request, response) => {
  */
 const getImportMapJSON = async (ts) => {
   try {
-    const href = `./deno.json?ts=${ts}`;
-    const response = await readFromCache(href) || await fetch(href);
+    const url = new URL(`/deno.json?ts=${ts}`, location.origin);
+    const response = await getFromCache(url) || await fetch(url);
 
-    await saveToCache(href, response);
+    const networkCache = await caches.open(NETWORK_CACHE_NAME);
+    await networkCache.put(url, response.clone());
 
     const importMap = await response.json();
 
@@ -184,25 +184,38 @@ const transpile = async (tsCode, href) => {
   const url = new URL(href);
   const ts = url.searchParams.get("ts") || Math.floor(Math.random() * 1e3);
 
+  const isCrossOrigin = !url.origin.includes(location.hostname);
   const importMap = await getImportMapJSON(ts);
 
-  const { code } = Babel.transform(tsCode, {
-    code: true,
-    ast: false,
-    filename: url.pathname,
-    presets: [["react", { runtime: "automatic" }], "typescript"],
-    plugins: [
-      appendTstoImportsBabelPlugin(ts),
-      transformImportMapBabelPlugin(importMap),
-    ],
-  });
+  const plugins = [];
 
-  return code;
+  // Do not add ?ts to cross origin imports to improve caching
+  // This is ok because we are not changing cross origin code
+  if (!isCrossOrigin) {
+    plugins.push(appendTstoImportsBabelPlugin(ts));
+  }
+
+  plugins.push(transformImportMapBabelPlugin(importMap));
+
+  try {
+    const { code } = Babel.transform(tsCode, {
+      code: true,
+      ast: false,
+      filename: url.pathname,
+      presets: [["react", { runtime: "automatic" }], "typescript"],
+      plugins,
+    });
+
+    return code;
+  } catch (error) {
+    console.error(error);
+    return `throw { stack: ${JSON.stringify(error.message || error.stack)} }`;
+  }
 };
 
 /** If the request is a Typescript file, transpile it and change to text/javascript */
 async function maybeTranspileResponse(request, response) {
-  const shouldTranspile = new URL(request.url).pathname.match(/\.tsx?$/);
+  const shouldTranspile = /\.(tsx?|m?js)$/.test(new URL(request.url).pathname);
 
   if (!shouldTranspile) {
     return response;
@@ -226,9 +239,20 @@ async function maybeTranspileResponse(request, response) {
 }
 
 async function route(request) {
-  const response = await readFromCache(request.url) || await fetch(request);
+  const transpilationCache = await caches.open(TRANSPILATION_CACHE_NAME);
+  const match = await transpilationCache.match(request);
+
+  if (match) {
+    return match;
+  }
+
+  const networkCache = await caches.open(NETWORK_CACHE_NAME);
+
+  const response = await getFromCache(request.url) || await fetch(request);
+  await networkCache.put(request, response.clone());
 
   const transpiled = await maybeTranspileResponse(request, response);
+  await transpilationCache.put(request, transpiled.clone());
 
   return transpiled;
 }
