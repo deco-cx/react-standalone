@@ -105,13 +105,9 @@ const main = async () => {
   if (sdk) {
     const filepaths = await sdk.fs.list();
     await Promise.all(filepaths.map(async (filepath) => {
-      try {
-        const { content } = await sdk.fs.read(filepath);
+      const { content } = await sdk.fs.read(filepath);
 
-        await updateFileCache(filepath, content).catch(console.error);
-      } catch (e) {
-        console.error(e);
-      }
+      await updateFileCache(filepath, content).catch(console.error);
     }));
 
     sdk.fs.onChange(async (event) => {
