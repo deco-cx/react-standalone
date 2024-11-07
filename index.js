@@ -1,6 +1,6 @@
 import { getSDK } from "https://webdraw.ai/webdraw-sdk";
 
-const cache = await caches.open("react-standalone::v3");
+const cache = await caches.open("react-standalone::v4");
 
 function filepathToMimeType(filepath) {
   if (/\.(tsx?|jsx?)$/.test(filepath)) {
@@ -103,11 +103,12 @@ const main = async () => {
   const sdk = await getSDK();
 
   if (sdk) {
-    for (const filepath of await sdk.fs.list()) {
+    const filepaths = await sdk.fs.list();
+    await Promise.all(filepaths.map(async (filepath) => {
       const { content } = await sdk.fs.read(filepath);
 
       await updateFileCache(filepath, content).catch(console.error);
-    }
+    }));
 
     sdk.fs.onChange(async (event) => {
       const filepath = event.filename;

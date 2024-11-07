@@ -12,8 +12,8 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(route(event.request));
 });
 
-const NETWORK_CACHE_NAME = "react-standalone::v3";
-const TRANSPILATION_CACHE_NAME = `react-standalone::transpiled::v3`;
+const NETWORK_CACHE_NAME = "react-standalone::v4";
+const TRANSPILATION_CACHE_NAME = `react-standalone::transpiled::v4`;
 
 const getFromCache = async (href) => {
   const cache = await caches.open(NETWORK_CACHE_NAME);
