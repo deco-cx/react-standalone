@@ -78,8 +78,11 @@ const registerServiceWorker = async () => {
     const registration = await navigator.serviceWorker.register("sw.js");
 
     if (registration.active) {
+      // should await?
+      await registration.update();
       waiting.resolve();
     } else if (registration.waiting || registration.installing) {
+      console.log("creating");
       const worker = registration.waiting || registration.installing;
 
       worker.addEventListener("statechange", (event) => {
@@ -89,6 +92,7 @@ const registerServiceWorker = async () => {
       });
     }
   } catch (error) {
+    console.log("error");
     console.error(error);
 
     throw new Error("ServiceWorker is required to run this app");
