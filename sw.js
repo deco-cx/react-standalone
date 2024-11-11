@@ -5,21 +5,7 @@ self.addEventListener("install", (_event) => {
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (
-            cacheName !== NETWORK_CACHE_NAME &&
-            cacheName !== TRANSPILATION_CACHE_NAME
-          ) {
-            console.log("keys", cacheName);
-            // return caches.delete(cacheName); // Clear old caches
-          }
-        }),
-      );
-    }).then(() => clients.claim()), // Take control of any open clients
-  );
+  event.waitUntil(clients.claim());
 });
 
 self.addEventListener("fetch", (event) => {
@@ -253,7 +239,6 @@ async function maybeTranspileResponse(request, response) {
 }
 
 async function route(request) {
-  console.log("route");
   const transpilationCache = await caches.open(TRANSPILATION_CACHE_NAME);
   const match = await transpilationCache.match(request);
 
