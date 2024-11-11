@@ -5,7 +5,7 @@ self.addEventListener("install", (_event) => {
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(clients.claim());
+  event.waitUntil(clearOldCaches());
 });
 
 self.addEventListener("fetch", (event) => {
@@ -14,6 +14,19 @@ self.addEventListener("fetch", (event) => {
 
 const NETWORK_CACHE_NAME = "react-standalone::v4";
 const TRANSPILATION_CACHE_NAME = `react-standalone::transpiled::v4`;
+
+/**
+ * Clear old caches because browser performs caches.match
+ * instead of a match in a given cache
+ */
+const clearOldCaches = async () => {
+  for (const key of await caches.keys()) {
+    if (key !== NETWORK_CACHE_NAME && key !== TRANSPILATION_CACHE_NAME) {
+      await caches.delete(key);
+    }
+  }
+  await clients.claim();
+};
 
 const getFromCache = async (href) => {
   const cache = await caches.open(NETWORK_CACHE_NAME);
@@ -215,10 +228,14 @@ const transpile = async (tsCode, href) => {
 
 /** If the request is a Typescript file, transpile it and change to text/javascript */
 async function maybeTranspileResponse(request, response) {
-  const shouldTranspile = /\.(tsx?|m?js)$/.test(new URL(request.url).pathname);
+  const url = new URL(request.url);
+  const isJSLike = /\.(tsx?|m?js)$/.test(url.pathname);
+  const isBlacklisted = url.origin === location.origin &&
+    url.pathname === "/index.js";
+  const shouldTranspile = isJSLike && !isBlacklisted;
 
   if (!shouldTranspile) {
-    return response;
+    return { transpiled: false, response };
   }
 
   const headers = new Headers(response.headers);
@@ -235,10 +252,15 @@ async function maybeTranspileResponse(request, response) {
     `transpilation;dur=${performance.now() - start}`,
   );
 
-  return new Response(text, { ...response, headers });
+  return {
+    transpiled: true,
+    response: new Response(text, { ...response, headers }),
+  };
 }
 
 async function route(request) {
+  const is3p = !request.url.startsWith(location.origin);
+
   const transpilationCache = await caches.open(TRANSPILATION_CACHE_NAME);
   const match = await transpilationCache.match(request);
 
@@ -246,13 +268,23 @@ async function route(request) {
     return match;
   }
 
-  const networkCache = await caches.open(NETWORK_CACHE_NAME);
+  const networkResponse = await getFromCache(request.url) ||
+    await fetch(request);
 
-  const response = await getFromCache(request.url) || await fetch(request);
-  await networkCache.put(request, response.clone());
+  // Only use network cache for 3p resources
+  if (is3p) {
+    const networkCache = await caches.open(NETWORK_CACHE_NAME);
+    await networkCache.put(request, networkResponse.clone());
+  }
 
-  const transpiled = await maybeTranspileResponse(request, response);
-  await transpilationCache.put(request, transpiled.clone());
+  const {
+    transpiled,
+    response: transpilationResponse,
+  } = await maybeTranspileResponse(request, networkResponse);
 
-  return transpiled;
+  if (transpiled) {
+    await transpilationCache.put(request, transpilationResponse.clone());
+  }
+
+  return transpilationResponse;
 }
