@@ -1,4 +1,4 @@
-import { getSDK } from "https://webdraw.ai/webdraw-sdk";
+import { getSDK } from "https://webdraw.com/webdraw-sdk";
 
 const cache = await caches.open("react-standalone::v5");
 
