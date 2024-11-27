@@ -12,7 +12,7 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(route(event.request));
 });
 
-const NETWORK_CACHE_NAME = "react-standalone::v5";
+const NETWORK_CACHE_NAME = "react-standalone::v6";
 const TRANSPILATION_CACHE_NAME = `react-standalone::transpiled::v5`;
 
 /**
