@@ -1,6 +1,6 @@
 import { getSDK } from "https://webdraw.com/webdraw-sdk";
 
-const cache = await caches.open("react-standalone::v6");
+const cache = await caches.open("react-standalone::v7");
 
 function filepathToMimeType(filepath) {
   if (/\.(tsx?|jsx?)$/.test(filepath)) {

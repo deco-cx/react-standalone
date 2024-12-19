@@ -12,8 +12,8 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(route(event.request));
 });
 
-const NETWORK_CACHE_NAME = "react-standalone::v6";
-const TRANSPILATION_CACHE_NAME = `react-standalone::transpiled::v5`;
+const NETWORK_CACHE_NAME = "react-standalone::v7";
+const TRANSPILATION_CACHE_NAME = `react-standalone::transpiled::v7`;
 
 /**
  * Clear old caches because browser performs caches.match
